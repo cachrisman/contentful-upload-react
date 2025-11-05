@@ -47,6 +47,7 @@ export function CredentialsForm() {
               Space ID
             </label>
             <input
+              autoComplete="off"
               type="text"
               className="input"
               placeholder="Enter Space ID"
@@ -60,6 +61,7 @@ export function CredentialsForm() {
               Environment ID
             </label>
             <input
+              autoComplete="off"
               type="text"
               className="input"
               placeholder="e.g., master"
@@ -74,6 +76,7 @@ export function CredentialsForm() {
             </label>
             <div className="relative">
               <input
+                autoComplete="off"
                 type={showToken ? 'text' : 'password'}
                 className="input pr-10"
                 placeholder="Enter Content Management API Token"
