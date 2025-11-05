@@ -5,7 +5,6 @@ import { FileList } from './components/FileList'
 import { UploadControls } from './components/UploadControls'
 import { StatusLog } from './components/StatusLog'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { Toaster } from 'react-hot-toast'
 import { Settings, Moon, Sun } from 'lucide-react'
 import { useEffect } from 'react'
 
@@ -108,17 +107,6 @@ function App() {
           </div>
         </div>
       </div>
-      
-      <Toaster 
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: '#363636',
-            color: '#fff',
-          },
-        }}
-      />
       </div>
     </ErrorBoundary>
   )
