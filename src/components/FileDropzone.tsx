@@ -3,7 +3,7 @@ import { useDropzone } from 'react-dropzone'
 import { Upload, FolderOpen, Play, Square, Loader2 } from 'lucide-react'
 import { useAppStore, UploadFile } from '../store/useAppStore'
 import { contentfulService } from '../services/contentfulService'
-import toast from 'react-hot-toast'
+import { Tag } from 'contentful-management'
 
 export function FileDropzone() {
   const { 
@@ -17,19 +17,20 @@ export function FileDropzone() {
     setIsConnecting,
     isConnecting,
     isDarkMode,
-    parallelCount
+    enableTagging,
+    setEnableTagging,
+    tagName,
+    setTagName
   } = useAppStore()
 
   const [isCancelled, setIsCancelled] = React.useState(false)
 
   const onDrop = React.useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) {
-      toast.error('No files selected')
       return
     }
 
     addFiles(acceptedFiles)
-    toast.success(`Added ${acceptedFiles.length} file(s)`)
   }, [addFiles])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -41,12 +42,10 @@ export function FileDropzone() {
 
   const handleUpload = async () => {
     if (!credentials.spaceId || !credentials.environmentId || !credentials.token) {
-      toast.error('Please configure your credentials first')
       return
     }
 
     if (files.length === 0) {
-      toast.error('No files to upload')
       return
     }
 
@@ -60,7 +59,6 @@ export function FileDropzone() {
       const connection = await contentfulService.connect(credentials)
       
       if (!connection.success) {
-        toast.error(`Connection failed: ${connection.error}`, { id: 'connection' })
         setIsUploading(false)
         setIsConnecting(false)
         return
@@ -68,7 +66,17 @@ export function FileDropzone() {
 
       setIsConnected(true)
       setIsConnecting(false)
-      toast.success('Connected to Contentful!', { id: 'connection' })
+
+      // Create tag if tagging is enabled
+      let tag: Tag | undefined = undefined
+      if (enableTagging && tagName.trim()) {
+        const tagResult = await contentfulService.createPrivateTag(tagName.trim())
+        if (tagResult.success && tagResult.tag) {
+          tag = tagResult.tag
+        } else {
+          console.warn('Failed to create tag:', tagResult.error)
+        }
+      }
 
       // Upload files with concurrency control
       const pendingFiles = files.filter(f => f.status === 'pending')
@@ -102,8 +110,7 @@ export function FileDropzone() {
       
       const result = await contentfulService.uploadFile(
         file.file,
-        (progress) => updateFileStatus(file.id, { progress })
-      )
+        tag
 
       if (result.success && result.asset) {
         updateFileStatus(file.id, {
@@ -192,12 +199,60 @@ export function FileDropzone() {
         )}
       </div>
 
+      {/* Tagging Controls */}
+      <div className="mt-6 space-y-3">
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id="enableTagging"
+            checked={enableTagging}
+            onChange={(e) => setEnableTagging(e.target.checked)}
+            disabled={isUploading}
+            className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400 dark:bg-gray-700"
+          />
+          <label 
+            htmlFor="enableTagging" 
+            className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}
+          >
+            Add tag to uploaded assets
+          </label>
+        </div>
+        
+        {enableTagging && (
+          <div>
+            <label 
+              htmlFor="tagName" 
+              className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}
+            >
+              Tag Name
+            </label>
+            <input
+              type="text"
+              id="tagName"
+              value={tagName}
+              onChange={(e) => setTagName(e.target.value)}
+              placeholder="Enter tag name..."
+              disabled={isUploading}
+              autoComplete="off"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                isDarkMode 
+                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
+            />
+            <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              A private tag will be created and applied to all uploaded assets
+            </p>
+          </div>
+        )}
+      </div>
+
       {/* Upload Controls */}
       <div className="mt-6 space-y-3">
         <div className="flex gap-2">
           <button
             onClick={handleUpload}
-            disabled={isUploading || files.length === 0 || !isConfigured}
+            disabled={isUploading || files.length === 0 || !isConfigured || (enableTagging && !tagName.trim())}
             className="btn btn-primary flex-1 flex items-center justify-center gap-2"
           >
             {isConnecting ? (

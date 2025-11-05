@@ -39,6 +39,12 @@ interface AppState {
   parallelCount: number
   setParallelCount: (count: number) => void
   
+  // Tagging
+  enableTagging: boolean
+  setEnableTagging: (enabled: boolean) => void
+  tagName: string
+  setTagName: (name: string) => void
+  
   // UI state
   isConnected: boolean
   setIsConnected: (connected: boolean) => void
@@ -104,6 +110,12 @@ export const useAppStore = create<AppState>()(
         parallelCount: Math.max(1, Math.min(10, Math.round(count))) 
       }),
       
+      // Tagging
+      enableTagging: false,
+      setEnableTagging: (enabled) => set({ enableTagging: enabled }),
+      tagName: '',
+      setTagName: (name) => set({ tagName: name }),
+      
       // UI state
       isConnected: false,
       setIsConnected: (connected) => set({ isConnected: connected }),
@@ -120,7 +132,9 @@ export const useAppStore = create<AppState>()(
         credentials: state.credentials,
         parallelCount: state.parallelCount,
         showSettings: state.showSettings,
-        isDarkMode: state.isDarkMode
+        isDarkMode: state.isDarkMode,
+        enableTagging: state.enableTagging,
+        tagName: state.tagName
       })
     }
   )
