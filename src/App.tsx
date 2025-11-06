@@ -7,6 +7,7 @@ import { StatusLog } from './components/StatusLog'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { Settings, Moon, Sun } from 'lucide-react'
 import { useEffect } from 'react'
+import './services/rateLimitInterceptor' // Initialize rate limit interceptor
 
 function App() {
   const { files, credentials, showSettings, setShowSettings, isDarkMode, setIsDarkMode } = useAppStore()

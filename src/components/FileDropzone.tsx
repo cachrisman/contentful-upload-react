@@ -17,13 +17,18 @@ export function FileDropzone() {
     setIsConnecting,
     isConnecting,
     isDarkMode,
+    parallelCount,
+    setUploadStartTime,
+    setUploadEndTime,
+    setFirstEstimate,
+    resetRateLimitCount,
     enableTagging,
     setEnableTagging,
     tagName,
     setTagName
   } = useAppStore()
 
-  const [isCancelled, setIsCancelled] = React.useState(false)
+  const [abortController, setAbortController] = React.useState<AbortController | null>(null)
 
   const onDrop = React.useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) {
@@ -51,8 +56,17 @@ export function FileDropzone() {
 
     setIsUploading(true)
     setIsConnecting(true)
-    setIsCancelled(false)
-    toast.loading('Connecting to Contentful...', { id: 'connection' })
+    
+    // Create abort controller locally to avoid React state timing issues
+    const controller = new AbortController()
+    setAbortController(controller)
+    
+    // Reset previous session timing before starting new session
+    setUploadStartTime(undefined)
+    setUploadEndTime(undefined)
+    setFirstEstimate(undefined)
+    setUploadStartTime(Date.now())
+    resetRateLimitCount()
 
     try {
       // Connect to Contentful
@@ -78,44 +92,95 @@ export function FileDropzone() {
         }
       }
 
-      // Upload files with concurrency control
-      const pendingFiles = files.filter(f => f.status === 'pending')
+      // Upload files with concurrency control (using sorted order)
+      const getStatusPriority = (status: string) => {
+        switch (status) {
+          case 'processing': return 1
+          case 'pending': return 2
+          case 'failed': return 3
+          case 'cancelled': return 4
+          case 'completed': return 5
+          default: return 6
+        }
+      }
+
+      const sortedFiles = [...files].sort((a, b) => {
+        // First sort by status priority
+        const statusDiff = getStatusPriority(a.status) - getStatusPriority(b.status)
+        if (statusDiff !== 0) return statusDiff
+        
+        // Then sort alphabetically by filename
+        return a.file.name.localeCompare(b.file.name)
+      })
+
+      const pendingFiles = sortedFiles.filter(f => f.status === 'pending')
       const uploadPromises: Promise<void>[] = []
       const semaphore = new Semaphore(parallelCount)
 
       for (const file of pendingFiles) {
-        const promise = uploadFileWithSemaphore(file, semaphore)
+        const promise = uploadFileWithSemaphore(file, semaphore, controller, tag)
         uploadPromises.push(promise)
       }
 
       await Promise.all(uploadPromises)
-
-      if (!isCancelled) {
-        toast.success('All uploads completed!')
-      }
+      
+      // Set end time when all uploads complete
+      setUploadEndTime(Date.now())
     } catch (error) {
-      toast.error(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.error('Upload session failed:', error)
     } finally {
       setIsUploading(false)
       setIsConnecting(false)
       setIsConnected(false)
+      setAbortController(null)
+      // Don't reset timing here - let it persist for the session summary
     }
   }
 
-  const uploadFileWithSemaphore = async (file: UploadFile, semaphore: Semaphore) => {
+  const uploadFileWithSemaphore = async (file: UploadFile, semaphore: Semaphore, abortController: AbortController, tag?: Tag) => {
     await semaphore.acquire()
     
+    const startTime = Date.now()
+    
     try {
-      updateFileStatus(file.id, { status: 'processing', progress: 0 })
+      // Check if cancelled before starting
+      if (abortController?.signal.aborted) {
+        updateFileStatus(file.id, { status: 'cancelled' })
+        return
+      }
+
+      updateFileStatus(file.id, { status: 'processing', progress: 0, startTime })
       
       const result = await contentfulService.uploadFile(
         file.file,
+        (progress) => {
+          // Check if cancelled during progress updates
+          if (abortController?.signal.aborted) {
+            updateFileStatus(file.id, { status: 'cancelled' })
+            return
+          }
+          updateFileStatus(file.id, { progress })
+        },
+        abortController?.signal,
         tag
+      )
+
+      // Check if cancelled after upload
+      if (abortController?.signal.aborted) {
+        updateFileStatus(file.id, { status: 'cancelled' })
+        return
+      }
+
+      const endTime = Date.now()
+      const duration = endTime - startTime
+      const uploadSpeed = file.file.size / duration // bytes per ms
 
       if (result.success && result.asset) {
         updateFileStatus(file.id, {
           status: 'completed',
           progress: 100,
+          endTime,
+          uploadSpeed: uploadSpeed * 1000, // convert to bytes per second
           assetId: result.asset.sys.id,
           assetUrl: contentfulService.getAssetUrl(result.asset),
           contentfulUrl: contentfulService.getContentfulUrl(
@@ -124,28 +189,56 @@ export function FileDropzone() {
             credentials.environmentId
           )
         })
-        toast.success(`Uploaded: ${file.file.name}`)
+        
+        // Capture first estimate after first file completes
+        const { getEstimatedCompletionTime, firstEstimate } = useAppStore.getState()
+        if (!firstEstimate) {
+          const estimate = getEstimatedCompletionTime()
+          if (estimate) {
+            setFirstEstimate(estimate)
+          }
+        }
       } else {
         updateFileStatus(file.id, {
           status: 'failed',
+          endTime,
           error: result.error
         })
-        toast.error(`Failed: ${file.file.name} - ${result.error}`)
       }
     } catch (error) {
-      updateFileStatus(file.id, {
-        status: 'failed',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      })
+      const endTime = Date.now()
+      if (abortController?.signal.aborted) {
+        updateFileStatus(file.id, {
+          status: 'cancelled',
+          endTime
+        })
+      } else {
+        console.error(`File upload failed for ${file.file.name}:`, error)
+        updateFileStatus(file.id, {
+          status: 'failed',
+          endTime,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        })
+      }
     } finally {
       semaphore.release()
     }
   }
 
   const handleCancel = () => {
-    setIsCancelled(true)
     setIsUploading(false)
-    toast.error('Upload cancelled')
+    
+    // Abort all ongoing uploads
+    if (abortController) {
+      abortController.abort()
+    }
+    
+    // Update all processing files to cancelled status
+    files.forEach(file => {
+      if (file.status === 'processing') {
+        updateFileStatus(file.id, { status: 'cancelled' })
+      }
+    })
   }
 
 

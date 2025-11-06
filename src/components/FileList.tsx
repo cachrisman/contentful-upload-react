@@ -1,14 +1,12 @@
-import { Trash2, ExternalLink, FileText, AlertCircle, Image, File, Music, Video, Archive } from 'lucide-react'
+import { Trash2, ExternalLink, FileText, AlertCircle, Image, File, Music, Video, Archive, Clock } from 'lucide-react'
 import { useAppStore, UploadFile } from '../store/useAppStore'
 import clsx from 'clsx'
-import toast from 'react-hot-toast'
 
 export function FileList() {
-  const { files, removeFile, isUploading, clearFiles, isDarkMode } = useAppStore()
+  const { files, removeFile, isUploading, clearFiles, isDarkMode, getEstimatedCompletionTime } = useAppStore()
 
   const handleClearFiles = () => {
     clearFiles()
-    toast.success('Files cleared')
   }
 
   const formatBytes = (bytes: number) => {
@@ -49,12 +47,40 @@ export function FileList() {
     return <File className="w-4 h-4 text-gray-500" />
   }
 
+  const getStatusPriority = (status: string) => {
+    switch (status) {
+      case 'processing': return 1
+      case 'pending': return 2
+      case 'failed': return 3
+      case 'cancelled': return 4
+      case 'completed': return 5
+      default: return 6
+    }
+  }
+
+  const sortedFiles = [...files].sort((a, b) => {
+    // First sort by status priority
+    const statusDiff = getStatusPriority(a.status) - getStatusPriority(b.status)
+    if (statusDiff !== 0) return statusDiff
+    
+    // Then sort alphabetically by filename
+    return a.file.name.localeCompare(b.file.name)
+  })
+
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-4">
-        <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-          Files ({files.length})
-        </h2>
+        <div>
+          <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            Files ({files.length})
+          </h2>
+          {isUploading && getEstimatedCompletionTime() && (
+            <div className={`flex items-center gap-1 text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              <Clock className="w-3 h-3" />
+              <span>Est. completion: {new Date(getEstimatedCompletionTime()!).toLocaleTimeString()}</span>
+            </div>
+          )}
+        </div>
         {files.length > 0 && (
           <button
             onClick={handleClearFiles}
@@ -86,25 +112,28 @@ export function FileList() {
             </tr>
           </thead>
           <tbody>
-            {files.map((file) => (
+            {sortedFiles.map((file) => (
               <tr key={file.id} className={`border-b hover:bg-gray-50 dark:hover:bg-gray-700 ${
                 isDarkMode ? 'border-gray-700' : 'border-gray-100'
               }`}>
-                <td className="py-[10px] px-2">
-                  <div className="flex items-center gap-2">
+                <td className="py-[10px] px-2 w-2/5 max-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
                     {getFileIcon(file.file)}
-                    <span className={`text-sm font-medium truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    <span 
+                      className={`text-sm font-medium truncate flex-1 min-w-0 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+                      title={file.file.name}
+                    >
                       {file.file.name}
                     </span>
                   </div>
                 </td>
-                <td className={`py-[10px] px-2 text-sm text-right ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                <td className={`py-[10px] px-2 w-20 text-sm text-right ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                   {formatBytes(file.file.size)}
                 </td>
-                <td className={`py-[10px] px-2 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                <td className={`py-[10px] px-2 w-10 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                   {file.file.type || 'Unknown'}
                 </td>
-                <td className="py-[10px] px-2">
+                <td className="py-[10px] px-2 w-32">
                   <span className={clsx('px-2 py-1 rounded-full text-xs font-medium', getStatusClass(file.status))}>
                     {getStatusText(file)}
                   </span>
@@ -117,7 +146,7 @@ export function FileList() {
                     </div>
                   )}
                 </td>
-                <td className="py-[10px] px-2 text-center">
+                <td className="py-[10px] px-2 w-16 text-center">
                   <div className="flex items-center justify-center gap-2">
                     {file.status === 'completed' && file.contentfulUrl && (
                       <a

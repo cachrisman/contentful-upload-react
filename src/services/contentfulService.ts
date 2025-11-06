@@ -1,4 +1,5 @@
 import { createClient, ClientAPI, Environment, Asset, Tag } from 'contentful-management'
+import { useAppStore } from '../store/useAppStore'
 
 export class ContentfulService {
   private client: ClientAPI | null = null
@@ -9,7 +10,47 @@ export class ContentfulService {
       this.client = createClient({
         accessToken: credentials.token,
         retryOnError: true,
-        retryLimit: 5
+        retryLimit: 5,
+        // Use response logger to intercept rate limit errors
+        responseLogger: (response: unknown) => {
+          if (typeof response === 'object' && response !== null && 'status' in response) {
+            const responseWithStatus = response as { status: number }
+            if (responseWithStatus.status === 429) {
+              const store = useAppStore.getState()
+              store.incrementRateLimit()
+            }
+          }
+        },
+        // Use request logger for debugging
+        requestLogger: (config: unknown) => {
+          // Only log in development mode
+          if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+            if (typeof config === 'object' && config !== null && 'method' in config && 'url' in config) {
+              const configWithMethod = config as { method: string; url: string }
+              console.debug('Contentful API Request:', configWithMethod.method?.toUpperCase(), configWithMethod.url)
+            }
+          }
+        },
+        // Custom log handler to intercept SDK warnings and errors
+        logHandler: (level: string, data: unknown) => {
+          const message = typeof data === 'string' ? data : String(data)
+          
+          // Check for rate limit related messages
+          if (this.isRateLimitMessage(message)) {
+            const store = useAppStore.getState()
+            store.incrementRateLimit()
+            return // Don't log rate limit messages
+          }
+          
+          // Log other messages normally
+          if (level === 'error') {
+            console.error('Contentful SDK Error:', data)
+          } else if (level === 'warning') {
+            console.warn('Contentful SDK Warning:', data)
+          } else {
+            console.log('Contentful SDK Info:', data)
+          }
+        }
       })
 
       const space = await this.client.getSpace(credentials.spaceId)
@@ -25,7 +66,7 @@ export class ContentfulService {
     }
   }
 
-  async uploadFile(file: File, onProgress?: (progress: number) => void): Promise<{
+  async uploadFile(file: File, onProgress?: (progress: number) => void, signal?: AbortSignal, tag?: Tag): Promise<{
     success: boolean
     asset?: Asset
     error?: string
@@ -35,6 +76,11 @@ export class ContentfulService {
     }
 
     try {
+      // Check if cancelled before starting
+      if (signal?.aborted) {
+        throw new Error('Upload cancelled')
+      }
+
       onProgress?.(10)
 
       const asset = await this.environment.createAssetFromFiles({
@@ -51,12 +97,22 @@ export class ContentfulService {
         }
       })
 
+      // Check if cancelled after asset creation
+      if (signal?.aborted) {
+        throw new Error('Upload cancelled')
+      }
+
       onProgress?.(50)
 
       const processedAsset = await asset.processForAllLocales({
         processingCheckWait: 1000,
         processingCheckRetries: 30
       })
+
+      // Check if cancelled after processing
+      if (signal?.aborted) {
+        throw new Error('Upload cancelled')
+      }
 
       onProgress?.(80)
 
@@ -73,10 +129,31 @@ export class ContentfulService {
 
       const publishedAsset = await assetToPublish.publish()
 
+      // Check if cancelled after publishing
+      if (signal?.aborted) {
+        throw new Error('Upload cancelled')
+      }
+
       onProgress?.(100)
 
       return { success: true, asset: publishedAsset }
     } catch (error) {
+      // Don't log cancellation as an error
+      if (signal?.aborted || (error instanceof Error && error.message === 'Upload cancelled')) {
+        return { success: false, error: 'Upload cancelled' }
+      }
+      
+      // Check for rate limit errors specifically
+      if (this.isRateLimitError(error)) {
+        const store = useAppStore.getState()
+        store.incrementRateLimit()
+        
+        return { 
+          success: false, 
+          error: 'Rate limit exceeded. Please wait a moment and try again.' 
+        }
+      }
+      
       console.error('Upload failed:', error)
       return { 
         success: false, 
@@ -193,6 +270,70 @@ export class ContentfulService {
         error: error instanceof Error ? error.message : 'Tag application failed' 
       }
     }
+  }
+
+  private isRateLimitMessage(message: string): boolean {
+    const rateLimitKeywords = [
+      'rate limit',
+      'rate-limit',
+      'too many requests',
+      '429',
+      'quota exceeded',
+      'throttle',
+      'retry after',
+      'retry-after',
+      'rate limit exceeded',
+      'rate limit hit',
+      'rate limit reached',
+      'api rate limit',
+      'request limit',
+      'request quota',
+      'throttled',
+      'rate limiting',
+      'contentful rate limit',
+      'management api rate limit'
+    ]
+    
+    const lowerMessage = message.toLowerCase()
+    return rateLimitKeywords.some(keyword => lowerMessage.includes(keyword))
+  }
+
+  private isRateLimitError(error: unknown): boolean {
+    if (!error) return false
+    
+    // Check for HTTP 429 status
+    if (typeof error === 'object' && error !== null && 'response' in error) {
+      const errorWithResponse = error as { response?: { status: number } }
+      if (errorWithResponse.response?.status === 429) {
+        return true
+      }
+    }
+    
+    // Check for rate limit in error message
+    const message = error instanceof Error ? error.message : String(error)
+    const rateLimitKeywords = [
+      'rate limit',
+      'rate-limit',
+      'too many requests',
+      '429',
+      'quota exceeded',
+      'throttle',
+      'retry after',
+      'retry-after',
+      'rate limit exceeded',
+      'rate limit hit',
+      'rate limit reached',
+      'api rate limit',
+      'request limit',
+      'request quota',
+      'throttled',
+      'rate limiting',
+      'contentful rate limit',
+      'management api rate limit'
+    ]
+    
+    const lowerMessage = message.toLowerCase()
+    return rateLimitKeywords.some(keyword => lowerMessage.includes(keyword))
   }
 }
 

@@ -1,4 +1,4 @@
-import { Activity, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { Activity, CheckCircle, XCircle, Clock, AlertTriangle, Timer } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 
 interface StatusLogProps {
@@ -6,7 +6,7 @@ interface StatusLogProps {
 }
 
 export function StatusLog({ isLeftColumn = false }: StatusLogProps) {
-  const { files, isUploading, isDarkMode } = useAppStore()
+  const { files, isUploading, isDarkMode, rateLimitCount, getEstimatedCompletionTime, uploadStartTime, uploadEndTime, firstEstimate, getSessionDuration } = useAppStore()
 
   const getStats = () => {
     const total = files.length
@@ -16,6 +16,28 @@ export function StatusLog({ isLeftColumn = false }: StatusLogProps) {
     const pending = files.filter(f => f.status === 'pending').length
 
     return { total, completed, failed, processing, pending }
+  }
+
+  const formatDuration = (ms: number) => {
+    const seconds = Math.floor(ms / 1000)
+    const minutes = Math.floor(seconds / 60)
+    const hours = Math.floor(minutes / 60)
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes % 60}m ${seconds % 60}s`
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds % 60}s`
+    } else {
+      return `${seconds}s`
+    }
+  }
+
+  const formatTime = (timestamp: number) => {
+    return new Date(timestamp).toLocaleTimeString()
+  }
+
+  const isSessionComplete = () => {
+    return !isUploading && uploadStartTime && (uploadEndTime || files.every(f => f.status === 'completed' || f.status === 'failed'))
   }
 
   const stats = getStats()
@@ -46,10 +68,56 @@ export function StatusLog({ isLeftColumn = false }: StatusLogProps) {
         </div>
       </div>
 
+      {isSessionComplete() && (
+        <div className={`mb-6 p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+          <h3 className={`text-sm font-medium mb-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Session Summary</h3>
+          <div className="space-y-2">
+            {uploadStartTime && (
+              <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <Clock className="w-4 h-4" />
+                <span>Started: {formatTime(uploadStartTime)}</span>
+              </div>
+            )}
+            {uploadEndTime && (
+              <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <Clock className="w-4 h-4" />
+                <span>Completed: {formatTime(uploadEndTime)}</span>
+              </div>
+            )}
+            {getSessionDuration() && (
+              <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <Timer className="w-4 h-4" />
+                <span>Duration: {formatDuration(getSessionDuration()!)}</span>
+              </div>
+            )}
+            {firstEstimate && (
+              <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <Clock className="w-4 h-4" />
+                <span>First estimate: {formatTime(firstEstimate)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {isUploading && (
-        <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-          <Activity className="w-4 h-4 animate-pulse" />
-          <span className="text-sm font-medium">Upload in progress...</span>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+            <Activity className="w-4 h-4 animate-pulse" />
+            <span className="text-sm font-medium">Upload in progress...</span>
+          </div>
+          {getEstimatedCompletionTime() && (
+            <div className={`flex items-center gap-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              <Clock className="w-4 h-4" />
+              <span>Est. completion: {new Date(getEstimatedCompletionTime()!).toLocaleTimeString()}</span>
+            </div>
+          )}
+          {rateLimitCount > 0 && (
+            <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
+              <AlertTriangle className="w-4 h-4" />
+              <span className="text-sm">{rateLimitCount} rate limit(s) encountered</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -73,6 +141,12 @@ export function StatusLog({ isLeftColumn = false }: StatusLogProps) {
             <div className={`flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               <Clock className="w-4 h-4" />
               <span className="text-sm">{stats.pending} files pending</span>
+            </div>
+          )}
+          {rateLimitCount > 0 && (
+            <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
+              <AlertTriangle className="w-4 h-4" />
+              <span className="text-sm">{rateLimitCount} rate limit(s) encountered</span>
             </div>
           )}
         </div>
