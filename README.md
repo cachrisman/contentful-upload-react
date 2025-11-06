@@ -15,8 +15,8 @@ A modern, React-based web application for uploading files and folders to Content
 
 ## Prerequisites
 
-- Node.js >= 18.0.0
-- pnpm >= 8.0.0
+- Node.js >= 22.0.0
+- pnpm >= 10.0.0
 - Contentful account with Management API access
 
 ## Installation
