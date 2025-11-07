@@ -4,6 +4,9 @@ import { Upload, FolderOpen, Play, Square, Loader2 } from 'lucide-react'
 import { useAppStore, type UploadFile } from '../store/useAppStore'
 import { contentfulService } from '../services/contentfulService'
 import type { Tag } from 'contentful-management'
+import { toast } from 'sonner'
+
+const CONNECTION_TOAST_ID = 'connection'
 
 export function FileDropzone() {
   const { 
@@ -32,10 +35,12 @@ export function FileDropzone() {
 
   const onDrop = React.useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) {
+      toast.error('No files selected')
       return
     }
 
     addFiles(acceptedFiles)
+    toast.success(`Added ${acceptedFiles.length} file${acceptedFiles.length === 1 ? '' : 's'}`)
   }, [addFiles])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -47,10 +52,17 @@ export function FileDropzone() {
 
   const handleUpload = async () => {
     if (!credentials.spaceId || !credentials.environmentId || !credentials.token) {
+      toast.error('Please configure your credentials first')
       return
     }
 
     if (files.length === 0) {
+      toast.error('No files to upload')
+      return
+    }
+
+    if (enableTagging && !tagName.trim()) {
+      toast.error('Enter a tag name or disable tagging before uploading')
       return
     }
 
@@ -68,11 +80,14 @@ export function FileDropzone() {
     setUploadStartTime(Date.now())
     resetRateLimitCount()
 
+    toast.loading('Connecting to Contentful...', { id: CONNECTION_TOAST_ID })
+
     try {
       // Connect to Contentful
       const connection = await contentfulService.connect(credentials)
       
       if (!connection.success) {
+        toast.error(`Connection failed: ${connection.error}`, { id: CONNECTION_TOAST_ID })
         setIsUploading(false)
         setIsConnecting(false)
         return
@@ -80,6 +95,7 @@ export function FileDropzone() {
 
       setIsConnected(true)
       setIsConnecting(false)
+      toast.success('Connected to Contentful!', { id: CONNECTION_TOAST_ID })
 
       // Create tag if tagging is enabled
       let tag: Tag | undefined = undefined
@@ -126,8 +142,16 @@ export function FileDropzone() {
       
       // Set end time when all uploads complete
       setUploadEndTime(Date.now())
+
+      if (!controller.signal.aborted) {
+        toast.success('All uploads completed!')
+      }
     } catch (error) {
       console.error('Upload session failed:', error)
+      if (!controller.signal.aborted) {
+        const message = error instanceof Error ? error.message : 'Unknown error'
+        toast.error(`Upload failed: ${message}`)
+      }
     } finally {
       setIsUploading(false)
       setIsConnecting(false)
@@ -190,6 +214,8 @@ export function FileDropzone() {
           )
         })
         
+        toast.success(`Uploaded: ${file.file.name}`)
+
         // Capture first estimate after first file completes
         const { getEstimatedCompletionTime, firstEstimate } = useAppStore.getState()
         if (!firstEstimate) {
@@ -204,6 +230,7 @@ export function FileDropzone() {
           endTime,
           error: result.error
         })
+        toast.error(`Failed: ${file.file.name} - ${result.error}`)
       }
     } catch (error) {
       const endTime = Date.now()
@@ -219,6 +246,7 @@ export function FileDropzone() {
           endTime,
           error: error instanceof Error ? error.message : 'Unknown error'
         })
+        toast.error(`Failed: ${file.file.name}`)
       }
     } finally {
       semaphore.release()
@@ -239,6 +267,8 @@ export function FileDropzone() {
         updateFileStatus(file.id, { status: 'cancelled' })
       }
     })
+
+    toast.error('Upload cancelled')
   }
 
 

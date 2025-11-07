@@ -1,18 +1,19 @@
 import { useAppStore } from './store/useAppStore'
-import { CredentialsForm } from './components/CredentialsForm'
 import { FileDropzone } from './components/FileDropzone'
 import { FileList } from './components/FileList'
-import { UploadControls } from './components/UploadControls'
 import { StatusLog } from './components/StatusLog'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { Settings, Moon, Sun } from 'lucide-react'
+import { Settings as SettingsIcon, Moon, Sun } from 'lucide-react'
 import { useEffect } from 'react'
+import { Settings } from './components/Settings'
+import { Toaster } from 'sonner'
 import './services/rateLimitInterceptor' // Initialize rate limit interceptor
 
 function App() {
   const { files, credentials, showSettings, setShowSettings, isDarkMode, setIsDarkMode } = useAppStore()
   
   const hasCredentials = credentials.spaceId && credentials.environmentId && credentials.token
+  const shouldShowSettings = showSettings
 
   // Apply dark mode class to document
   useEffect(() => {
@@ -22,6 +23,13 @@ function App() {
       document.documentElement.classList.remove('dark')
     }
   }, [isDarkMode])
+
+  // Force settings modal open until required credentials are provided
+  useEffect(() => {
+    if (!hasCredentials && !showSettings) {
+      setShowSettings(true)
+    }
+  }, [hasCredentials, showSettings, setShowSettings])
 
   return (
     <ErrorBoundary>
@@ -35,11 +43,11 @@ function App() {
                 <button
                   onClick={() => setShowSettings(!showSettings)}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  title={showSettings ? 'Hide settings (Ctrl+,)' : 'Show settings (Ctrl+,)'}
+                  title={shouldShowSettings ? 'Hide settings (Ctrl+,)' : 'Show settings (Ctrl+,)'}
                 >
-                  <Settings className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                  <SettingsIcon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                    {showSettings ? 'Hide Settings' : 'Settings'}
+                    {shouldShowSettings ? 'Hide Settings' : 'Settings'}
                   </span>
                 </button>
               )}
@@ -73,40 +81,26 @@ function App() {
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Left Column - Configuration or Status/Upload */}
-          <div className="lg:col-span-1 space-y-6">
-            {hasCredentials && !showSettings ? (
-              // When credentials are saved and settings are hidden, show StatusLog and FileDropzone
-              <>
-                {files.length > 0 && <StatusLog isLeftColumn={true} />}
-                <FileDropzone />
-              </>
-            ) : (
-              // When settings are shown or no credentials, show settings panels
-              <>
-                <CredentialsForm />
-                <UploadControls />
-              </>
-            )}
+          {/* Main Content */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {/* Left Column - Status + Dropzone */}
+            <div className="lg:col-span-1 space-y-6">
+              {files.length > 0 && <StatusLog isLeftColumn={true} />}
+              <FileDropzone />
+            </div>
+
+            {/* Right Column - File Management */}
+            <div className="space-y-6 lg:col-span-2">
+              {files.length > 0 ? <FileList /> : <StatusLog />}
+            </div>
           </div>
 
-          {/* Right Column - File Management */}
-          <div className="space-y-6 lg:col-span-2">
-            {hasCredentials && !showSettings ? (
-              // When settings are hidden, show FileList if files exist, otherwise show StatusLog
-              files.length > 0 ? <FileList /> : <StatusLog />
-            ) : (
-              // When settings are shown, show the original layout
-              <>
-                <StatusLog />
-                <FileDropzone />
-                {files.length > 0 && <FileList />}
-              </>
-            )}
-          </div>
-        </div>
+          <Settings 
+            isOpen={shouldShowSettings} 
+            onClose={() => setShowSettings(false)} 
+            canClose={!!hasCredentials} 
+          />
+          <Toaster richColors position="top-right" theme={isDarkMode ? 'dark' : 'light'} />
       </div>
       </div>
     </ErrorBoundary>

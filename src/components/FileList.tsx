@@ -1,12 +1,14 @@
 import { Trash2, ExternalLink, FileText, AlertCircle, Image, File, Music, Video, Archive, Clock } from 'lucide-react'
 import { useAppStore, type UploadFile } from "../store/useAppStore";
 import clsx from 'clsx'
+import { toast } from 'sonner'
 
 export function FileList() {
   const { files, removeFile, isUploading, clearFiles, isDarkMode, getEstimatedCompletionTime } = useAppStore()
 
   const handleClearFiles = () => {
     clearFiles()
+    toast.success('Files cleared')
   }
 
   const formatBytes = (bytes: number) => {

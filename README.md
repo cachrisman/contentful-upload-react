@@ -84,19 +84,18 @@ Your Management API token needs the following permissions:
 ```
 src/
 ├── components/           # React components
-│   ├── CredentialsForm.tsx    # Credentials configuration
-│   ├── ErrorBoundary.tsx      # Error boundary wrapper
-│   ├── FileDropzone.tsx       # File upload interface
+│   ├── Settings.tsx          # Credentials & upload settings modal
+│   ├── ErrorBoundary.tsx     # Error boundary wrapper
+│   ├── FileDropzone.tsx      # File upload interface
 │   ├── FileList.tsx          # File management list
-│   ├── StatusLog.tsx         # Upload status display
-│   └── UploadControls.tsx    # Upload settings
+│   └── StatusLog.tsx         # Upload status display
 ├── services/             # External service integrations
 │   └── contentfulService.ts   # Contentful API client
 ├── store/               # State management
 │   └── useAppStore.ts         # Zustand store
 ├── App.tsx              # Main application component
 ├── main.tsx            # Application entry point
-└── index.css           # Global styles
+└── index.tailwind.css  # Global styles
 ```
 
 ## Technology Stack
@@ -107,7 +106,7 @@ src/
 - **Tailwind CSS** - Styling
 - **Zustand** - State management
 - **React Dropzone** - File upload handling
-- **React Hot Toast** - Notifications
+- **Sonner** - Notifications
 - **Lucide React** - Icons
 - **Contentful Management API** - Contentful integration
 
