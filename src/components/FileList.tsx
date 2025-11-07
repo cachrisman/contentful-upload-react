@@ -1,5 +1,5 @@
 import { Trash2, ExternalLink, FileText, AlertCircle, Image, File, Music, Video, Archive, Clock } from 'lucide-react'
-import { useAppStore, UploadFile } from '../store/useAppStore'
+import { useAppStore, type UploadFile } from "../store/useAppStore";
 import clsx from 'clsx'
 
 export function FileList() {
@@ -104,11 +104,11 @@ export function FileList() {
           <table className="w-full">
           <thead>
             <tr className={`border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-              <th className={`text-left py-[10px] px-2 font-medium w-2/5 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>File</th>
-              <th className={`text-left py-[10px] px-2 font-medium w-20 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Size</th>
-              <th className={`text-left py-[10px] px-2 font-medium w-10 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Type</th>
-              <th className={`text-left py-[10px] px-2 font-medium w-32 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Status</th>
-              <th className={`text-left py-[10px] px-2 font-medium w-16 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Actions</th>
+              <th className={`text-left py-2.5 px-2 font-medium w-2/5 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>File</th>
+              <th className={`text-left py-2.5 px-2 font-medium w-20 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Size</th>
+              <th className={`text-left py-2.5 px-2 font-medium w-10 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Type</th>
+              <th className={`text-left py-2.5 px-2 font-medium w-32 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Status</th>
+              <th className={`text-left py-2.5 px-2 font-medium w-16 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -116,7 +116,7 @@ export function FileList() {
               <tr key={file.id} className={`border-b hover:bg-gray-50 dark:hover:bg-gray-700 ${
                 isDarkMode ? 'border-gray-700' : 'border-gray-100'
               }`}>
-                <td className="py-[10px] px-2 w-2/5 max-w-0">
+                <td className="py-2.5 px-2 w-2/5 max-w-0">
                   <div className="flex items-center gap-2 min-w-0">
                     {getFileIcon(file.file)}
                     <span 
@@ -127,13 +127,13 @@ export function FileList() {
                     </span>
                   </div>
                 </td>
-                <td className={`py-[10px] px-2 w-20 text-sm text-right ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                <td className={`py-2.5 px-2 w-20 text-sm text-right ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                   {formatBytes(file.file.size)}
                 </td>
-                <td className={`py-[10px] px-2 w-10 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                <td className={`py-2.5 px-2 w-10 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                   {file.file.type || 'Unknown'}
                 </td>
-                <td className="py-[10px] px-2 w-32">
+                <td className="py-2.5 px-2 w-32">
                   <span className={clsx('px-2 py-1 rounded-full text-xs font-medium', getStatusClass(file.status))}>
                     {getStatusText(file)}
                   </span>
@@ -146,7 +146,7 @@ export function FileList() {
                     </div>
                   )}
                 </td>
-                <td className="py-[10px] px-2 w-16 text-center">
+                <td className="py-2.5 px-2 w-16 text-center">
                   <div className="flex items-center justify-center gap-2">
                     {file.status === 'completed' && file.contentfulUrl && (
                       <a

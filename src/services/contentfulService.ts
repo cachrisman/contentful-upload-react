@@ -1,4 +1,5 @@
-import { createClient, ClientAPI, Environment, Asset, Tag } from 'contentful-management'
+import { createClient } from 'contentful-management'
+import type { ClientAPI, Environment, Asset, Tag } from 'contentful-management'
 import { useAppStore } from '../store/useAppStore'
 
 export class ContentfulService {

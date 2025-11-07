@@ -1,9 +1,9 @@
 import React from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Upload, FolderOpen, Play, Square, Loader2 } from 'lucide-react'
-import { useAppStore, UploadFile } from '../store/useAppStore'
+import { useAppStore, type UploadFile } from '../store/useAppStore'
 import { contentfulService } from '../services/contentfulService'
-import { Tag } from 'contentful-management'
+import type { Tag } from 'contentful-management'
 
 export function FileDropzone() {
   const { 
