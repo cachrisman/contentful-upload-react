@@ -29,8 +29,8 @@ function App() {
         <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="relative my-6">
-          <div className="flex items-center justify-between min-h-[80px]">
-            <div className="flex-shrink-0">
+          <div className="flex items-center justify-between min-h-20">
+            <div className="shrink-0">
               {hasCredentials && (
                 <button
                   onClick={() => setShowSettings(!showSettings)}
@@ -54,7 +54,7 @@ function App() {
                 </p>
               </div>
             </div>
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <button
                 onClick={() => setIsDarkMode(!isDarkMode)}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
