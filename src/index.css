@@ -1,16 +1,9 @@
-@reference "tailwindcss/theme";
-@reference "tailwindcss/utilities";
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tailwindcss/utilities";
 
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;
-  }
-  body {
-    @apply m-0;
   }
 }
 
