@@ -34,12 +34,24 @@ export function FileList({ fillHeight = false }: FileListProps) {
     }
   }
 
+  const getProcessingStageLabel = (progress: number) => {
+    if (progress >= 100) return 'Completed'
+    if (progress >= 75) return 'Publishing Asset'
+    if (progress >= 50) return 'Processing Asset'
+    if (progress >= 25) return 'Creating Asset'
+    return 'Pending'
+  }
+
   const getStatusText = (file: UploadFile) => {
     if (file.status === 'processing') {
-      return `Processing... ${file.progress}%`
+      const stage = getProcessingStageLabel(file.progress)
+      return `${stage} (${file.progress}%)`
     }
     if (file.status === 'failed') {
       return `Failed: ${file.error}`
+    }
+    if (file.status === 'completed') {
+      return 'Completed'
     }
     return file.status.charAt(0).toUpperCase() + file.status.slice(1)
   }
@@ -114,7 +126,7 @@ export function FileList({ fillHeight = false }: FileListProps) {
                   <th className={`text-left py-2.5 px-2 font-medium w-2/5 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>File</th>
                   <th className={`text-left py-2.5 px-2 font-medium w-20 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Size</th>
                   <th className={`text-left py-2.5 px-2 font-medium w-10 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Type</th>
-                  <th className={`text-left py-2.5 px-2 font-medium w-32 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Status</th>
+                  <th className={`text-left py-2.5 px-2 font-medium w-40 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Status</th>
                   <th className={`text-left py-2.5 px-2 font-medium w-16 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Actions</th>
                 </tr>
               </thead>
@@ -140,7 +152,7 @@ export function FileList({ fillHeight = false }: FileListProps) {
                     <td className={`py-2.5 px-2 w-10 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                       {file.file.type || 'Unknown'}
                     </td>
-                    <td className="py-2.5 px-2 w-32">
+                  <td className="py-2.5 px-2 w-40">
                       <span className={clsx('px-2 py-1 rounded-full text-xs font-medium', getStatusClass(file.status))}>
                         {getStatusText(file)}
                       </span>

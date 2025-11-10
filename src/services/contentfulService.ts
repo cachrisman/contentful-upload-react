@@ -82,7 +82,7 @@ export class ContentfulService {
         throw new Error("Upload cancelled");
       }
 
-      onProgress?.(10);
+      onProgress?.(25);
 
       const asset = await this.environment.createAssetFromFiles({
         fields: {
@@ -115,7 +115,7 @@ export class ContentfulService {
         throw new Error("Upload cancelled");
       }
 
-      onProgress?.(80);
+      onProgress?.(75);
 
       // Apply tag before publishing if provided
       let assetToPublish = processedAsset;
