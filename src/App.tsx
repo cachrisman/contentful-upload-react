@@ -7,6 +7,7 @@ import { useEffect } from 'react'
 import { Settings } from './components/Settings'
 import { Toaster } from 'sonner'
 import './services/rateLimitInterceptor' // Initialize rate limit interceptor
+import { applyThemeClass } from './utils/theme'
 
 function App() {
   const { credentials, showSettings, setShowSettings, isDarkMode, setIsDarkMode } = useAppStore()
@@ -16,11 +17,7 @@ function App() {
 
   // Apply dark mode class to document
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
+    applyThemeClass(isDarkMode)
   }, [isDarkMode])
 
   // Force settings modal open until required credentials are provided

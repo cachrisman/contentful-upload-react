@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { getPreferredTheme } from '../utils/theme'
 
 export interface UploadFile {
   id: string
@@ -152,7 +153,7 @@ export const useAppStore = create<AppState>()(
       setIsConnecting: (connecting) => set({ isConnecting: connecting }),
       showSettings: false,
       setShowSettings: (show) => set({ showSettings: show }),
-      isDarkMode: false,
+      isDarkMode: getPreferredTheme(),
       setIsDarkMode: (dark) => set({ isDarkMode: dark }),
       
       // Rate limiting tracking
