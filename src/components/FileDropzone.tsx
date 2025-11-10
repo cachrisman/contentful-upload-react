@@ -50,6 +50,10 @@ export function FileDropzone() {
       if (file.webkitRelativePath) return file.webkitRelativePath
       return file.name
     }
+    const normalizeRelativePath = (path: string) =>
+      path
+        .replace(/\\/g, '/')
+        .replace(/^(\.\/)+/, '')
 
     let folderDropped = false
     let skippedSubfolderFiles = 0
@@ -57,15 +61,16 @@ export function FileDropzone() {
     const filesFromTopFolders: File[] = []
 
     acceptedFiles.forEach((file) => {
-      const relativePath = getRelativePath(file as FileWithPossibleRelativePath)
-      const hasPathSegments = relativePath.includes('/')
-      if (!hasPathSegments) {
+      const rawRelativePath = getRelativePath(file as FileWithPossibleRelativePath)
+      const relativePath = normalizeRelativePath(rawRelativePath)
+      const segments = relativePath.split('/').filter(Boolean)
+
+      if (segments.length <= 1) {
         filesFromTopFolders.push(file)
         return
       }
 
       folderDropped = true
-      const segments = relativePath.split('/').filter(Boolean)
       const [topFolder, ...rest] = segments
       if (topFolder) {
         topFolderNames.add(topFolder)
