@@ -74,10 +74,7 @@ export function FileList({ fillHeight = false }: FileListProps) {
   })
 
   return (
-    <div className={clsx(
-      'card',
-      fillHeight && 'flex flex-col h-full min-h-0'
-    )}>
+    <div className={clsx('card', fillHeight && 'flex flex-col h-full min-h-0')}>
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -103,28 +100,16 @@ export function FileList({ fillHeight = false }: FileListProps) {
       </div>
 
       {files.length === 0 ? (
-        <div className={clsx(
-          'text-center py-12',
-          fillHeight && 'flex-1 flex flex-col items-center justify-center'
-        )}>
+        <div className={clsx('text-center py-12', fillHeight && 'flex-1 flex flex-col items-center justify-center')}>
           <FileText className={`w-12 h-12 mx-auto mb-4 ${isDarkMode ? 'text-gray-600' : 'text-gray-300'}`} />
           <h3 className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>No files selected</h3>
           <p className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>Drag and drop files or folders to get started</p>
         </div>
       ) : (
-        <div className={clsx(
-          'overflow-x-auto',
-          fillHeight && 'flex-1 min-h-0'
-        )}>
-          <div className={clsx(
-            'overflow-y-auto',
-            fillHeight ? 'h-full' : 'max-h-[60vh]'
-          )}>
+        <div className={clsx('overflow-x-auto', fillHeight && 'flex-1 min-h-0')}>
+          <div className={clsx('overflow-y-auto', fillHeight ? 'h-full' : 'max-h-[60vh]')}>
             <table className="w-full">
-              <thead className={clsx(
-                'sticky top-0 z-10',
-                isDarkMode ? 'bg-gray-900' : 'bg-white'
-              )}>
+              <thead className={clsx('sticky top-0 z-10', isDarkMode ? 'bg-gray-900' : 'bg-white')}>
                 <tr className={`border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                   <th className={`text-left py-2.5 px-2 font-medium w-2/5 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>File</th>
                   <th className={`text-left py-2.5 px-2 font-medium w-20 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Size</th>
