@@ -1,11 +1,8 @@
 import { Activity, CheckCircle, XCircle, Clock, AlertTriangle, Timer } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
+import { FileList } from './FileList'
 
-interface StatusLogProps {
-  isLeftColumn?: boolean
-}
-
-export function StatusLog({ isLeftColumn = false }: StatusLogProps) {
+export function StatusLog() {
   const { files, isUploading, isDarkMode, rateLimitCount, getEstimatedCompletionTime, uploadStartTime, uploadEndTime, firstEstimate, getSessionDuration } = useAppStore()
 
   const getStats = () => {
@@ -42,11 +39,11 @@ export function StatusLog({ isLeftColumn = false }: StatusLogProps) {
 
   const stats = getStats()
 
-  return (
+  const renderStatusCard = () => (
     <div className="card">
       <h2 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Upload Status</h2>
       
-      <div className={`grid gap-4 mb-6 ${isLeftColumn ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'}`}>
+      <div className="grid gap-4 mb-6 grid-cols-2 md:grid-cols-4">
         <div className={`text-center p-3 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
           <div className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{stats.total}</div>
           <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Total Files</div>
@@ -159,6 +156,17 @@ export function StatusLog({ isLeftColumn = false }: StatusLogProps) {
           <p className="text-sm">Drag and drop files or folders to get started</p>
         </div>
       )}
+    </div>
+  )
+
+  return (
+    <div className="flex flex-col gap-6 h-full min-h-0">
+      <div className="shrink-0">
+        {renderStatusCard()}
+      </div>
+      <div className="flex-1 min-h-0">
+        <FileList fillHeight />
+      </div>
     </div>
   )
 }

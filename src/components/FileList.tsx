@@ -3,7 +3,11 @@ import { useAppStore, type UploadFile } from "../store/useAppStore";
 import clsx from 'clsx'
 import { toast } from 'sonner'
 
-export function FileList() {
+interface FileListProps {
+  fillHeight?: boolean
+}
+
+export function FileList({ fillHeight = false }: FileListProps) {
   const { files, removeFile, isUploading, clearFiles, isDarkMode, getEstimatedCompletionTime } = useAppStore()
 
   const handleClearFiles = () => {
@@ -70,7 +74,10 @@ export function FileList() {
   })
 
   return (
-    <div className="card">
+    <div className={clsx(
+      'card',
+      fillHeight && 'flex flex-col h-full min-h-0'
+    )}>
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -96,101 +103,115 @@ export function FileList() {
       </div>
 
       {files.length === 0 ? (
-        <div className="text-center py-12">
+        <div className={clsx(
+          'text-center py-12',
+          fillHeight && 'flex-1 flex flex-col items-center justify-center'
+        )}>
           <FileText className={`w-12 h-12 mx-auto mb-4 ${isDarkMode ? 'text-gray-600' : 'text-gray-300'}`} />
           <h3 className={`text-lg font-medium mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>No files selected</h3>
           <p className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>Drag and drop files or folders to get started</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-          <thead>
-            <tr className={`border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-              <th className={`text-left py-2.5 px-2 font-medium w-2/5 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>File</th>
-              <th className={`text-left py-2.5 px-2 font-medium w-20 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Size</th>
-              <th className={`text-left py-2.5 px-2 font-medium w-10 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Type</th>
-              <th className={`text-left py-2.5 px-2 font-medium w-32 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Status</th>
-              <th className={`text-left py-2.5 px-2 font-medium w-16 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedFiles.map((file) => (
-              <tr key={file.id} className={`border-b hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                isDarkMode ? 'border-gray-700' : 'border-gray-100'
-              }`}>
-                <td className="py-2.5 px-2 w-2/5 max-w-0">
-                  <div className="flex items-center gap-2 min-w-0">
-                    {getFileIcon(file.file)}
-                    <span 
-                      className={`text-sm font-medium truncate flex-1 min-w-0 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
-                      title={file.file.name}
-                    >
-                      {file.file.name}
-                    </span>
-                  </div>
-                </td>
-                <td className={`py-2.5 px-2 w-20 text-sm text-right ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {formatBytes(file.file.size)}
-                </td>
-                <td className={`py-2.5 px-2 w-10 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {file.file.type || 'Unknown'}
-                </td>
-                <td className="py-2.5 px-2 w-32">
-                  <span className={clsx('px-2 py-1 rounded-full text-xs font-medium', getStatusClass(file.status))}>
-                    {getStatusText(file)}
-                  </span>
-                  {file.status === 'processing' && (
-                    <div className={`w-full rounded-full h-1 mt-2 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                      <div 
-                        className="bg-blue-600 h-1 rounded-full transition-all duration-300"
-                        style={{ width: `${file.progress}%` }}
-                      />
-                    </div>
-                  )}
-                </td>
-                <td className="py-2.5 px-2 w-16 text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    {file.status === 'completed' && file.contentfulUrl && (
-                      <a
-                        href={file.contentfulUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800"
-                        title="View in Contentful"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </a>
-                    )}
-                    {file.status === 'completed' && file.assetUrl && (
-                      <a
-                        href={file.assetUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-green-600 hover:text-green-800"
-                        title="View file"
-                      >
-                        <FileText className="w-4 h-4" />
-                      </a>
-                    )}
-                    {file.status === 'failed' && (
-                      <div className="text-red-600" title={file.error}>
-                        <AlertCircle className="w-4 h-4" />
+        <div className={clsx(
+          'overflow-x-auto',
+          fillHeight && 'flex-1 min-h-0'
+        )}>
+          <div className={clsx(
+            'overflow-y-auto',
+            fillHeight ? 'h-full' : 'max-h-[60vh]'
+          )}>
+            <table className="w-full">
+              <thead className={clsx(
+                'sticky top-0 z-10',
+                isDarkMode ? 'bg-gray-900' : 'bg-white'
+              )}>
+                <tr className={`border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <th className={`text-left py-2.5 px-2 font-medium w-2/5 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>File</th>
+                  <th className={`text-left py-2.5 px-2 font-medium w-20 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Size</th>
+                  <th className={`text-left py-2.5 px-2 font-medium w-10 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Type</th>
+                  <th className={`text-left py-2.5 px-2 font-medium w-32 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Status</th>
+                  <th className={`text-left py-2.5 px-2 font-medium w-16 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedFiles.map((file) => (
+                  <tr key={file.id} className={`border-b hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                    isDarkMode ? 'border-gray-700' : 'border-gray-100'
+                  }`}>
+                    <td className="py-2.5 px-2 w-2/5 max-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {getFileIcon(file.file)}
+                        <span 
+                          className={`text-sm font-medium truncate flex-1 min-w-0 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}
+                          title={file.file.name}
+                        >
+                          {file.file.name}
+                        </span>
                       </div>
-                    )}
-                    <button
-                      onClick={() => removeFile(file.id)}
-                      disabled={isUploading && file.status === 'processing'}
-                      className="text-red-600 hover:text-red-800 disabled:opacity-50"
-                      title="Remove file"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    </td>
+                    <td className={`py-2.5 px-2 w-20 text-sm text-right ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      {formatBytes(file.file.size)}
+                    </td>
+                    <td className={`py-2.5 px-2 w-10 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      {file.file.type || 'Unknown'}
+                    </td>
+                    <td className="py-2.5 px-2 w-32">
+                      <span className={clsx('px-2 py-1 rounded-full text-xs font-medium', getStatusClass(file.status))}>
+                        {getStatusText(file)}
+                      </span>
+                      {file.status === 'processing' && (
+                        <div className={`w-full rounded-full h-1 mt-2 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                          <div 
+                            className="bg-blue-600 h-1 rounded-full transition-all duration-300"
+                            style={{ width: `${file.progress}%` }}
+                          />
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-2 w-16 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        {file.status === 'completed' && file.contentfulUrl && (
+                          <a
+                            href={file.contentfulUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800"
+                            title="View in Contentful"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        )}
+                        {file.status === 'completed' && file.assetUrl && (
+                          <a
+                            href={file.assetUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-green-600 hover:text-green-800"
+                            title="View file"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </a>
+                        )}
+                        {file.status === 'failed' && (
+                          <div className="text-red-600" title={file.error}>
+                            <AlertCircle className="w-4 h-4" />
+                          </div>
+                        )}
+                        <button
+                          onClick={() => removeFile(file.id)}
+                          disabled={isUploading && file.status === 'processing'}
+                          className="text-red-600 hover:text-red-800 disabled:opacity-50"
+                          title="Remove file"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

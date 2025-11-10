@@ -1,5 +1,5 @@
 import React from 'react'
-import { useDropzone } from 'react-dropzone'
+import { useDropzone, type DropEvent, type FileRejection, type FileWithPath } from 'react-dropzone'
 import { Upload, FolderOpen, Play, Square, Loader2 } from 'lucide-react'
 import { useAppStore, type UploadFile } from '../store/useAppStore'
 import { contentfulService } from '../services/contentfulService'
@@ -28,20 +28,85 @@ export function FileDropzone() {
     enableTagging,
     setEnableTagging,
     tagName,
-    setTagName
+    setTagName,
+    autoTagFromFolder
   } = useAppStore()
 
   const [abortController, setAbortController] = React.useState<AbortController | null>(null)
 
-  const onDrop = React.useCallback((acceptedFiles: File[]) => {
+  const onDrop = React.useCallback((
+    acceptedFiles: FileWithPath[],
+    _fileRejections: FileRejection[],
+    _event: DropEvent
+  ) => {
     if (acceptedFiles.length === 0) {
       toast.error('No files selected')
       return
     }
 
-    addFiles(acceptedFiles)
-    toast.success(`Added ${acceptedFiles.length} file${acceptedFiles.length === 1 ? '' : 's'}`)
-  }, [addFiles])
+    type FileWithPossibleRelativePath = FileWithPath & { webkitRelativePath?: string }
+    const getRelativePath = (file: FileWithPossibleRelativePath) => {
+      if (file.path) return file.path
+      if (file.webkitRelativePath) return file.webkitRelativePath
+      return file.name
+    }
+
+    let folderDropped = false
+    let skippedSubfolderFiles = 0
+    const topFolderNames = new Set<string>()
+    const filesFromTopFolders: File[] = []
+
+    acceptedFiles.forEach((file) => {
+      const relativePath = getRelativePath(file as FileWithPossibleRelativePath)
+      const hasPathSegments = relativePath.includes('/')
+      if (!hasPathSegments) {
+        filesFromTopFolders.push(file)
+        return
+      }
+
+      folderDropped = true
+      const segments = relativePath.split('/').filter(Boolean)
+      const [topFolder, ...rest] = segments
+      if (topFolder) {
+        topFolderNames.add(topFolder)
+      }
+
+      if (rest.length > 1) {
+        skippedSubfolderFiles += 1
+        return
+      }
+
+      filesFromTopFolders.push(file)
+    })
+
+    if (folderDropped && filesFromTopFolders.length === 0) {
+      toast.warning('Subfolders detected. Only files in the top folder can be added. Drop each subfolder separately.')
+      return
+    }
+
+    if (filesFromTopFolders.length === 0) {
+      toast.error('No files selected')
+      return
+    }
+
+    if (skippedSubfolderFiles > 0) {
+      toast.warning(
+        `Skipped ${skippedSubfolderFiles} file${skippedSubfolderFiles === 1 ? '' : 's'} inside subfolders. Drop each subfolder separately to upload them.`
+      )
+    }
+
+    addFiles(filesFromTopFolders)
+    toast.success(`Added ${filesFromTopFolders.length} file${filesFromTopFolders.length === 1 ? '' : 's'}`)
+
+    if (folderDropped && autoTagFromFolder) {
+      const primaryFolderName = topFolderNames.values().next().value as string | undefined
+      const sanitizedTagName = primaryFolderName?.trim()
+      if (sanitizedTagName) {
+        setEnableTagging(true)
+        setTagName(sanitizedTagName)
+      }
+    }
+  }, [addFiles, autoTagFromFolder, setEnableTagging, setTagName])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

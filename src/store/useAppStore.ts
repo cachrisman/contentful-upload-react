@@ -48,6 +48,8 @@ interface AppState {
   setEnableTagging: (enabled: boolean) => void
   tagName: string
   setTagName: (name: string) => void
+  autoTagFromFolder: boolean
+  setAutoTagFromFolder: (enabled: boolean) => void
   
   // UI state
   isConnected: boolean
@@ -140,6 +142,8 @@ export const useAppStore = create<AppState>()(
       setEnableTagging: (enabled) => set({ enableTagging: enabled }),
       tagName: '',
       setTagName: (name) => set({ tagName: name }),
+      autoTagFromFolder: true,
+      setAutoTagFromFolder: (enabled) => set({ autoTagFromFolder: enabled }),
       
       // UI state
       isConnected: false,
@@ -213,7 +217,8 @@ export const useAppStore = create<AppState>()(
         showSettings: state.showSettings,
         isDarkMode: state.isDarkMode,
         enableTagging: state.enableTagging,
-        tagName: state.tagName
+        tagName: state.tagName,
+        autoTagFromFolder: state.autoTagFromFolder
       })
     }
   )

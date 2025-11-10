@@ -17,7 +17,9 @@ export function Settings({ isOpen, onClose, canClose }: SettingsProps) {
     parallelCount,
     setParallelCount,
     isUploading,
-    isDarkMode
+    isDarkMode,
+    autoTagFromFolder,
+    setAutoTagFromFolder
   } = useAppStore()
 
   const [showToken, setShowToken] = React.useState(false)
@@ -208,6 +210,27 @@ export function Settings({ isOpen, onClose, canClose }: SettingsProps) {
                 </div>
                 <div className={`rounded-lg p-3 ${isDarkMode ? 'bg-gray-700 text-gray-200' : 'bg-white text-gray-700'} text-sm`}>
                   High concurrency increases speed but may trigger API rate limits.
+                </div>
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="autoTagFromFolder"
+                    checked={autoTagFromFolder}
+                    onChange={(e) => setAutoTagFromFolder(e.target.checked)}
+                    disabled={isUploading}
+                    className="mt-1 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400 dark:bg-gray-700"
+                  />
+                  <div>
+                    <label 
+                      htmlFor="autoTagFromFolder" 
+                      className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}
+                    >
+                      Tag based on folder name
+                    </label>
+                    <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      When enabled, dropping a folder automatically turns on tagging and uses the folder name for the tag.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
