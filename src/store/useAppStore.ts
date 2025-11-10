@@ -215,10 +215,7 @@ export const useAppStore = create<AppState>()(
       partialize: (state) => ({
         credentials: state.credentials,
         parallelCount: state.parallelCount,
-        showSettings: state.showSettings,
         isDarkMode: state.isDarkMode,
-        enableTagging: state.enableTagging,
-        tagName: state.tagName,
         autoTagFromFolder: state.autoTagFromFolder
       })
     }

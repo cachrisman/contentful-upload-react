@@ -162,14 +162,14 @@ export function FileDropzone() {
       setIsConnecting(false)
       toast.success('Connected to Contentful!', { id: CONNECTION_TOAST_ID })
 
-      // Create tag if tagging is enabled
+      // Find or create private tag if tagging is enabled
       let tag: Tag | undefined = undefined
       if (enableTagging && tagName.trim()) {
-        const tagResult = await contentfulService.createPrivateTag(tagName.trim())
+        const tagResult = await contentfulService.findOrCreatePrivateTag(tagName.trim())
         if (tagResult.success && tagResult.tag) {
           tag = tagResult.tag
         } else {
-          console.warn('Failed to create tag:', tagResult.error)
+          console.warn('Failed to find or create tag:', tagResult.error)
         }
       }
 

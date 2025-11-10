@@ -148,14 +148,6 @@ export function StatusLog() {
           )}
         </div>
       )}
-
-      {stats.total === 0 && (
-        <div className={`text-center py-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-          <Activity className={`w-8 h-8 mx-auto mb-2 ${isDarkMode ? 'text-gray-600' : 'text-gray-300'}`} />
-          <p>No files selected</p>
-          <p className="text-sm">Drag and drop files or folders to get started</p>
-        </div>
-      )}
     </div>
   )
 
